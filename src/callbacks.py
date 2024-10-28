@@ -5,6 +5,8 @@ import requests
 import dash
 import json
 from plan import create_plan_page
+from landing import landing
+from summary import summary
 
 # Callback para controlar la apertura y cierre del menú lateral
 @callback(
@@ -69,9 +71,9 @@ def add_new_plan(n_clicks, current_plans):
 )
 def display_page(pathname):
     if pathname == "/":
-        return html.H1("Página inicial")
+        return landing
     if pathname == "/resumen":
-        return html.H1("Resumen de la Aplicación")
+        return summary
     elif pathname.startswith("/plan-"):
         plan_num = pathname.split("-")[1]
         layout = create_plan_page(plan_num)
@@ -241,7 +243,7 @@ def show_course_sections(n_clicks, courses_by_code, search_detail_style, search_
         Output("events-container", "children"),
         Output("current-plan", "children"),
     ],
-    Input({'type': 'storage', 'index': 'local'}, 'data'),
+    Input({'type': 'storage', 'index': 'schedules'}, 'data'),
 )
 def update_events(events):
 
@@ -268,10 +270,10 @@ def update_events(events):
                 top = (start_time_min - time_zero) * calendar_height / time_span
                 left = (["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"].index(day)) / total_days * 100
                 height = duration_min * calendar_height / time_span
-
+                
                 # Creamos un nuevo evento
                 new_event = html.Div(
-                    f"{section['nrc']} - {section['section']} - 90%",
+                    f"{section['title']} - sección: {section['section']} - 90%",
                     className="event-box",
                     style={
                         "position": "absolute",
@@ -289,7 +291,9 @@ def update_events(events):
                 f"{section['title']} - {section['nrc']} - {section['section']}",
                 className="event-summary"
             ),
-            html.Div("X", id={'type': 'remove-section', 'index': section['nrc']}, style={"cursor": "pointer", "backgroundColor": "red", "color": "white", "borderRadius": "50%", "width": "20px", "height": "20px", "display": "flex", "justifyContent": "center", "alignItems": "center"})
+            html.Div(html.I(className="fas fa-trash-alt"),
+                     id={'type': 'remove-section', 'index': section['nrc']}, 
+                     style={"cursor": "pointer", "color": "red", "borderRadius": "50%", "width": "20px", "height": "20px", "display": "flex", "justifyContent": "center", "alignItems": "center"})
         ], style={"display": "grid", "justifyContent": "space-between", "alignItems": "center", "width": "100%", "gridTemplateColumns": "1fr auto", "gap": "10px", "padding": "5px"})
         summary_events.append(summary_element)
             
@@ -300,7 +304,7 @@ def update_events(events):
     [
         Output("progress-panel", "children"),
     ],
-    Input({'type': 'storage', 'index': 'local'}, 'data'),
+    Input({'type': 'storage', 'index': 'schedules'}, 'data'),
     prevent_initial_call=True
 )
 def update_progress_bar(events):
@@ -323,14 +327,14 @@ def update_progress_bar(events):
 
 # Callback combinado para añadir o eliminar eventos en el contenedor
 @callback(
-    Output({'type': 'storage', 'index': 'local'}, 'data'),
+    Output({'type': 'storage', 'index': 'schedules'}, 'data'),
     [
         Input({'type': 'add-section', 'index': ALL}, 'n_clicks'),
         Input({'type': 'remove-section', 'index': ALL}, 'n_clicks')
     ],
     [
         State({'type': 'storage', 'index': 'memory'}, 'data'),
-        State({'type': 'storage', 'index': 'local'}, 'data')
+        State({'type': 'storage', 'index': 'schedules'}, 'data')
     ],
     prevent_initial_call=True
 )
@@ -378,6 +382,58 @@ def modify_section_in_calendar(add_clicks, remove_clicks, courses_by_code, curre
         ]
 
     return current_events
+
+
+# Callback unificado para guardar y cargar el turno de inscripción
+@callback(
+    [
+        Output({'type': 'storage', 'index': 'position'}, 'data'),  # Guardar en dcc.Store
+        Output('input-day', 'value'),
+        Output('input-month', 'value'),
+        Output('input-year', 'value'),
+        Output('input-hour', 'value'),
+        Output('input-minute', 'value')
+    ],
+    [
+        Input('position-set-button', 'n_clicks'),  # Botón para establecer el turno
+        Input({'type': 'storage', 'index': 'position'}, 'data')  # Al cargar los datos del local storage
+    ],
+    [
+        State('input-day', 'value'),
+        State('input-month', 'value'),
+        State('input-year', 'value'),
+        State('input-hour', 'value'),
+        State('input-minute', 'value')
+    ],
+    prevent_initial_call=True  # Evitar que se ejecute al inicio sin interacción
+)
+def handle_position(n_clicks=None, stored_position=None, day=1, month=1, year=2024, hour=2, minute=32):
+    ctx = dash.callback_context
+
+    # Si se hace clic en el botón, guarda el turno en local storage
+    if ctx.triggered and ctx.triggered[0]['prop_id'] == 't-button.n_clicks' and n_clicks:
+        position_data = {
+            'day': day,
+            'month': month,
+            'year': year,
+            'hour': hour,
+            'minute': minute
+        }
+        return position_data, day, month, year, hour, minute
+
+    # Si hay datos almacenados, cargarlos en los campos de entrada
+    if stored_position:
+        return (
+            dash.no_update,  # No actualizamos el store (no hay interacción del usuario)
+            stored_position.get('day', ''),
+            stored_position.get('month', ''),
+            stored_position.get('year', ''),
+            stored_position.get('hour', ''),
+            stored_position.get('minute', '')
+        )
+
+    # Si no hay datos, devolvemos valores vacíos
+    return dash.no_update, '', '', '', '', ''
 
 
 # # Callback para añadir eventos al contenedor cuando se hace clic en el botón "+"
