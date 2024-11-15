@@ -9,6 +9,33 @@ from landing import landing
 from summary import summary
 from model import predict_course_probability,Course
 import pandas as pd
+import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
+
+# Obtener el colormap "Blues"
+cmap = plt.get_cmap("Blues")
+
+# Función para mapear una probabilidad (0 a 1) a un color en la escala de "Blues" de matplotlib
+def get_color_from_probability(probability):
+    """
+    Mapea una probabilidad (0 a 1) a un color hexadecimal usando el colormap 'Blues' de Matplotlib.
+
+    Args:
+        probability (float): Probabilidad entre 0 y 1.
+
+    Returns:
+        str: Color en formato hexadecimal (#RRGGBB).
+    """
+    # Asegurarse de que la probabilidad esté en el rango [0, 1]
+    probability = max(0, min(probability, 1))
+
+    # Mapear la probabilidad a un color
+    rgba_color = cmap(probability)
+
+    # Convertir el color RGBA a formato hexadecimal
+    hex_color = mcolors.to_hex(rgba_color)
+
+    return hex_color
 
 # Callback para controlar la apertura y cierre del menú lateral
 @callback(
@@ -201,6 +228,7 @@ def search_courses(n_clicks, search_value, search_detail_style, search_results_s
     prevent_initial_call=True
 )
 def show_course_sections(n_clicks, courses_by_code, search_detail_style, search_results_style):
+
     # Verificar si hubo algún clic
     if not any(n_clicks):
         return dash.no_update, search_detail_style, search_results_style
@@ -233,7 +261,7 @@ def show_course_sections(n_clicks, courses_by_code, search_detail_style, search_
                         html.I(className="fas fa-plus", style={"color": "orange"}),
                     ], id={'type': 'add-section', 'index': section['nrc']}, n_clicks=0, style={"border": "none", "backgroundColor": "transparent", "cursor": "pointer", "float": "right"}),
                 ], style={"borderRadius": "20px", "padding": "10px", "backgroundColor": "#f0f0f0", "margin": "10px 0", "display": "flex", "flexDirection":"column" , "justifyContent": "center", "alignItems": "center"})
-            ], style={"display":"grid", "grid-template-columns": "1fr auto", "gap": "10px"} )
+            ], style={"display":"grid", "gridTemplateColumns": "1fr auto", "gap": "10px"} )
         )
 
     # Cambiar estilos para mostrar detalles y ocultar resultados de búsqueda
@@ -261,14 +289,14 @@ FIRST_ENROLLMENT_TIME = pd.Timestamp("2024-07-17 08:00:00")
 )
 def update_dashboard(schedules_data, position):
     if not schedules_data or not position:
-        return [], [], []
+        return [], dash.no_update, []
     
 
     
     summary_events = []
     displayed_events = []
     total_probability = 1  # Probabilidad combinada de inscribir todos los cursos
-    position=pd.Timestamp(position)
+    position = pd.Timestamp(position)
 
 
     # Procesar cada curso en schedules
@@ -292,6 +320,8 @@ def update_dashboard(schedules_data, position):
         # Multiplicar la probabilidad al total
         total_probability *= probability
 
+        print(section.keys())
+
         # Crear eventos y resumen de eventos
         for schedule in section['schedules']:
             for day in schedule['days'].split(','):
@@ -308,17 +338,38 @@ def update_dashboard(schedules_data, position):
                 top = (start_time_min - time_zero) * calendar_height / time_span
                 left = (["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"].index(day)) / total_days * 100
                 height = duration_min * calendar_height / time_span
+
+                # Obtener el color de fondo según la probabilidad
+                background_color = get_color_from_probability(1 - probability)
+                profesors = ", ".join(section['instructors'])
+                alert_emoji = "⚠️ " if probability < 0.5 else ""
                 
-                # Crear nuevo evento con la fecha esperada de llenado
+                # Crear nuevo evento con animación de flip card
                 new_event = html.Div(
-                    f"{section['title']} - sección: {section['section']} - Probabilidad: {int(probability * 100)}% - Esperado: {expected_fill_time.strftime('%Y-%m-%d %H:%M') if expected_fill_time else None}",
+                    html.Div(
+                        [
+                            # Lado frontal de la tarjeta
+                            html.Div(
+                                f"{alert_emoji}{section['title']} - sección: {section['section']} - Probabilidad: {int(probability * 100)}%",
+                                className="flip-front",
+                                style={"backgroundColor": background_color, "color": "black"}
+                            ),
+                            # Lado trasero de la tarjeta
+                            html.Div(
+                                f"Esperado: {expected_fill_time.strftime('%Y-%m-%d %H:%M') if expected_fill_time else 'No disponible'} \n Profesor: {profesors}",
+                                className="flip-back",
+                                style={"backgroundColor": background_color, "color": "black"}
+                            ),
+                        ],
+                        className="flip-inner"
+                    ),
                     className="event-box",
                     style={
-                        "position": "absolute",
                         "top": f"{top}px",
                         "left": f"{left}%",
                         "height": f"{height}px",
-                        "fontSize": "x-small"
+                        "fontSize": "x-small",
+                        "backgroundColor": background_color,  # Mantengo el color de fondo original
                     }
                 )
                 displayed_events.append(new_event)

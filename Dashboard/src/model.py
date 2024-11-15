@@ -17,6 +17,17 @@ day_categories = ["l", "m", "i", "j", "v", "s", "d"]  # Días de la semana (Lune
 time_categories = ['06:30-06:60', '07:00-07:30', '07:30-07:60', '08:00-08:30', '08:30-08:60', '09:00-09:30', '09:30-09:60', '10:00-10:30', '10:30-10:60', '11:00-11:30', '11:30-11:60', '12:00-12:30', '12:30-12:60', '13:00-13:30', '13:30-13:60', '14:00-14:30', '14:30-14:60', '15:00-15:30', '15:30-15:60', '16:00-16:30', '16:30-16:60', '17:00-17:30', '17:30-17:60', '18:00-18:30', '18:30-18:60', '19:00-19:30', '19:30-19:60', '20:00-20:30', '20:30-20:60', '21:00-21:30']
 # Función principal para la predicción
 
+# Cargar el scaler y el modelo desde archivos pickle
+def load_scaler_model():
+    with open("scaler.pkl", "rb") as scaler_file:
+        scaler = pickle.load(scaler_file)
+    with open("model.pkl", "rb") as model_file:
+        model = pickle.load(model_file)
+    return scaler, model
+
+
+scaler, model = load_scaler_model()
+
 #####-----------------------------------------------------------------------
 # Definimos una clase Course para encapsular los datos de cada curso
 class Course:
@@ -47,14 +58,6 @@ def create_time_bins(schedules):
             if not (time_fin <= interval_start or time_ini >= interval_end):
                 bins[i] = 1
     return bins
-
-# Cargar el scaler y el modelo desde archivos pickle
-def load_scaler_model():
-    with open("scaler.pkl", "rb") as scaler_file:
-        scaler = pickle.load(scaler_file)
-    with open("model.pkl", "rb") as model_file:
-        model = pickle.load(model_file)
-    return scaler, model
 
 # Calcular la duración en minutos, dentro del horario activo de 8:00 am a 5:00 pm
 def calcular_duration_en_horas_activas(first_enroll_time, fill_time):
@@ -122,7 +125,6 @@ def predict_course_probability(course, enrollment_time):
     course_level = np.array([[course.course_level]])
 
     X = np.hstack([time_bins, days_one_hot, class_encoded, ptrmdesc_encoded, course_level])
-    scaler, model = load_scaler_model()
     X_scaled = scaler.transform(X)
 
     if enrollment_time < course.first_enrollment_time:
