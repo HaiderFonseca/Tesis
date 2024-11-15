@@ -7,6 +7,8 @@ import json
 from plan import create_plan_page
 from landing import landing
 from summary import summary
+from model import predict_course_probability,Course
+import pandas as pd
 
 # Callback para controlar la apertura y cierre del menú lateral
 @callback(
@@ -155,7 +157,10 @@ def search_courses(n_clicks, search_value, search_detail_style, search_results_s
                     "nrc": course["nrc"],
                     "credits": course["credits"],
                     "instructors": list(map(lambda i: i["name"], course["instructors"])),
-                    "schedules": schedules
+                    "schedules": schedules,
+                    "course_level":int(course['course'][0]),
+                    "course_class":course['class'],
+                    "ptrmdesc":course['ptrmdesc']
                 }
                 courses_by_code[course_code].append(course)
 
@@ -238,42 +243,75 @@ def show_course_sections(n_clicks, courses_by_code, search_detail_style, search_
     return section_rows, search_detail_style, search_results_style
 
 
+# Fecha de inscripción inicial
+FIRST_ENROLLMENT_TIME = pd.Timestamp("2024-07-17 08:00:00")
+
+# Unificación de los callbacks
 @callback(
     [
         Output("events-container", "children"),
         Output("current-plan", "children"),
+        Output("progress-panel", "children"),
     ],
-    Input({'type': 'storage', 'index': 'schedules'}, 'data'),
+    [
+        Input({'type': 'storage', 'index': 'schedules'}, 'data'),
+        Input({'type': 'storage', 'index': 'position'}, 'data')
+    ],
+    
 )
-def update_events(events):
+def update_dashboard(schedules_data, position):
+    if not schedules_data or not position:
+        return [], [], []
+    
 
-    if not events:
-        return [], []
     
     summary_events = []
     displayed_events = []
-    for section in events:
+    total_probability = 1  # Probabilidad combinada de inscribir todos los cursos
+    position=pd.Timestamp(position)
+
+
+    # Procesar cada curso en schedules
+    for section in schedules_data:
+        # Crear una instancia de Course para cada curso
+        course = Course(
+            nrc=section['nrc'],
+            schedules=section['schedules'],
+            course_level=section['course_level'],
+            course_class=section['course_class'],
+            ptrmdesc=section['ptrmdesc'],
+            first_enrollment_time=FIRST_ENROLLMENT_TIME
+        )
+       
+
+        # Calcular la probabilidad de inscripción para el curso y el tiempo esperado de llenado
+        probability, expected_fill_time = predict_course_probability(course, position)
+        print(f"Probabilidad de inscripción para el curso {course.nrc}: {probability}")
+        print(f"Tiempo esperado de llenado del curso {course.nrc}: {expected_fill_time}")
+
+        # Multiplicar la probabilidad al total
+        total_probability *= probability
+
+        # Crear eventos y resumen de eventos
         for schedule in section['schedules']:
-            # Asignamos el día, la hora de inicio y de fin
-            # Tomamos todos los días
             for day in schedule['days'].split(','):
                 start_time_min = int(schedule['time_ini'][:2]) * 60 + int(schedule['time_ini'][-2:])
                 end_time_min = int(schedule['time_fin'][:2]) * 60 + int(schedule['time_fin'][-2:])
                 duration_min = end_time_min - start_time_min
 
-                # Calculamos la posición y tamaño del evento
-                total_days = 6  # Número de días de la semana visibles
-                calendar_height = 680  # Alto del contenedor del calendario
-                time_span = 16 * 60  # Rango de horas visible (ejemplo: 6 AM - 10 PM)
-                time_zero = 6 * 60  # Hora mínima visible (6 AM)
+                # Calcular posición y tamaño del evento
+                total_days = 6
+                calendar_height = 680
+                time_span = 16 * 60
+                time_zero = 6 * 60
 
                 top = (start_time_min - time_zero) * calendar_height / time_span
                 left = (["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"].index(day)) / total_days * 100
                 height = duration_min * calendar_height / time_span
                 
-                # Creamos un nuevo evento
+                # Crear nuevo evento con la fecha esperada de llenado
                 new_event = html.Div(
-                    f"{section['title']} - sección: {section['section']} - 90%",
+                    f"{section['title']} - sección: {section['section']} - Probabilidad: {int(probability * 100)}% - Esperado: {expected_fill_time.strftime('%Y-%m-%d %H:%M') if expected_fill_time else None}",
                     className="event-box",
                     style={
                         "position": "absolute",
@@ -285,44 +323,43 @@ def update_events(events):
                 )
                 displayed_events.append(new_event)
 
-        # Creamos un resumen de los eventos
+        # Crear resumen de los eventos
         summary_element = html.Div([
             html.Div(
                 f"{section['title']} - {section['nrc']} - {section['section']}",
                 className="event-summary"
             ),
-            html.Div(html.I(className="fas fa-trash-alt"),
-                     id={'type': 'remove-section', 'index': section['nrc']}, 
-                     style={"cursor": "pointer", "color": "red", "borderRadius": "50%", "width": "20px", "height": "20px", "display": "flex", "justifyContent": "center", "alignItems": "center"})
+            html.Div(
+                html.I(className="fas fa-trash-alt"),
+                id={'type': 'remove-section', 'index': section['nrc']}, 
+                style={
+                    "cursor": "pointer", "color": "red", "borderRadius": "50%", "width": "20px",
+                    "height": "20px", "display": "flex", "justifyContent": "center", "alignItems": "center"
+                }
+            )
         ], style={"display": "grid", "justifyContent": "space-between", "alignItems": "center", "width": "100%", "gridTemplateColumns": "1fr auto", "gap": "10px", "padding": "5px"})
+        
         summary_events.append(summary_element)
-            
-    return displayed_events, summary_events
 
+    # Convertir total_probability a porcentaje
+    combined_probability = int(total_probability * 100)
 
-@callback(
-    [
-        Output("progress-panel", "children"),
-    ],
-    Input({'type': 'storage', 'index': 'schedules'}, 'data'),
-    prevent_initial_call=True
-)
-def update_progress_bar(events):
-    percentage = random.randint(0, 100)
-    return [html.Div(
+    # Actualizar barra de progreso
+    progress_bar = html.Div(
         className="progress",
         style={"height": "20px", "borderRadius": "15px"},
         children=[
             html.Div(
-                f"{percentage}%",  # Este texto será mostrado dentro de la barra
+                f"{combined_probability}%",  # Mostrar el porcentaje en la barra
                 className="progress-bar progress-bar-striped progress-bar-animated",
                 role="progressbar",
-                style={"width": f"{percentage}%", "backgroundColor": "#F0A500", "color": "#FFF"},  # Color personalizado y ancho del progreso
-                **{"aria-valuenow": f"{percentage}", "aria-valuemin": "0", "aria-valuemax": "100"}
+                style={"width": f"{combined_probability}%", "backgroundColor": "#F0A500", "color": "#FFF"},
+                **{"aria-valuenow": f"{combined_probability}", "aria-valuemin": "0", "aria-valuemax": "100"}
             )
         ]
-    )]
-
+    )
+    
+    return displayed_events, summary_events, [progress_bar]
 
 
 # Callback combinado para añadir o eliminar eventos en el contenedor
@@ -384,7 +421,8 @@ def modify_section_in_calendar(add_clicks, remove_clicks, courses_by_code, curre
     return current_events
 
 
-# Callback unificado para guardar y cargar el turno de inscripción
+
+# Callback unificado para guardar y cargar el turno de inscripción como timestamp
 @callback(
     [
         Output({'type': 'storage', 'index': 'position'}, 'data'),  # Guardar en dcc.Store
@@ -407,132 +445,27 @@ def modify_section_in_calendar(add_clicks, remove_clicks, courses_by_code, curre
     ],
     prevent_initial_call=True  # Evitar que se ejecute al inicio sin interacción
 )
-def handle_position(n_clicks=None, stored_position=None, day=1, month=1, year=2024, hour=2, minute=32):
+def handle_position(n_clicks=None, stored_position=None, day=1, month=1, year=2024, hour=0, minute=0):
     ctx = dash.callback_context
 
-    # Si se hace clic en el botón, guarda el turno en local storage
-    if ctx.triggered and ctx.triggered[0]['prop_id'] == 't-button.n_clicks' and n_clicks:
-        position_data = {
-            'day': day,
-            'month': month,
-            'year': year,
-            'hour': hour,
-            'minute': minute
-        }
-        return position_data, day, month, year, hour, minute
+    # Si se hace clic en el botón, guarda el turno como timestamp en local storage
+    if ctx.triggered and ctx.triggered[0]['prop_id'] == 'position-set-button.n_clicks' and n_clicks:
+        # Convertir los valores de día, mes, año, hora y minuto a timestamp
+        position_timestamp = pd.Timestamp(year=int(year), month=int(month), day=int(day), hour=int(hour), minute=int(minute))
+        return position_timestamp.isoformat(), day, month, year, hour, minute
 
     # Si hay datos almacenados, cargarlos en los campos de entrada
     if stored_position:
+        # Convertir el timestamp almacenado de vuelta a una fecha y hora
+        stored_timestamp = pd.Timestamp(stored_position)
         return (
             dash.no_update,  # No actualizamos el store (no hay interacción del usuario)
-            stored_position.get('day', ''),
-            stored_position.get('month', ''),
-            stored_position.get('year', ''),
-            stored_position.get('hour', ''),
-            stored_position.get('minute', '')
+            stored_timestamp.day,
+            stored_timestamp.month,
+            stored_timestamp.year,
+            stored_timestamp.hour,
+            stored_timestamp.minute
         )
 
     # Si no hay datos, devolvemos valores vacíos
     return dash.no_update, '', '', '', '', ''
-
-
-# # Callback para añadir eventos al contenedor cuando se hace clic en el botón "+"
-# @callback(
-#     [Output({'type': 'storage', 'index': 'local'}, 'data')],
-#     [Input({'type': 'add-section', 'index': ALL}, 'n_clicks')],
-#     [
-#         State({'type': 'storage', 'index': 'memory'}, 'data'),
-#         State({'type': 'storage', 'index': 'local'}, 'data'),
-#     ],
-#     prevent_initial_call=True
-# )
-# def add_section_to_calendar(n_clicks, courses_by_code, current_events):
-
-#     # Inicializamos `current_events` como lista si es None o no es una lista
-#     if current_events is None:
-#         current_events = []
-
-#     if not any(n_clicks):
-#         return [current_events] if current_events else [[]]
-
-#     # Obtenemos el contexto de qué botón fue clicado
-#     ctx = dash.callback_context
-#     triggered_id = ctx.triggered[0]['prop_id'].replace(".n_clicks", "")
-#     section_nrc = json.loads(triggered_id)["index"]
-
-#     # Busca la sección correspondiente en el almacenamiento
-#     for course_code, sections in courses_by_code.items():
-#         for section in sections:
-#             if section["nrc"] == section_nrc:
-#                 # Añadimos el nuevo evento al contenedor
-#                 current_events.append(section)
-
-#                 return [current_events] if current_events else [[]]
-
-#     return [current_events] if current_events else [[]]
-
-
-# # Callback para realizar la búsqueda y agregar eventos con base en el horario de 'schedules'
-# @callback(
-#     Output('calendar-events', 'children'),
-#     Input({'type': 'add-event', 'index': ALL}, 'n_clicks'),
-#     State('calendar-events', 'children'),
-#     State('search-input', 'value')
-# )
-# def add_scheduled_event(n_clicks, current_events, search_value):
-#     if any(n_clicks) and search_value:
-#         # Hacer la petición a la API de búsqueda de cursos
-#         search_value = search_value.upper().strip()
-#         url = f'https://ofertadecursos.uniandes.edu.co/api/courses?nameInput={search_value}'
-#         response = requests.get(url)
-        
-#         if response.status_code == 200:
-#             courses_data = response.json()
-            
-#             # Tomamos el primer curso (puedes cambiar esto para manejar más cursos)
-#             course = courses_data[0]
-            
-#             # Extraer el título y el horario del curso
-#             course_title = course["title"]
-#             schedules = course["schedules"]
-
-#             # Agregar eventos basados en el horario de 'schedules'
-#             for schedule in schedules:
-#                 time_ini = int(schedule["time_ini"][:2]) - 6  # Restamos 6 para ajustar el rango a las 6 AM
-#                 time_fin = int(schedule["time_fin"][:2]) - 6
-#                 classroom = schedule["classroom"]
-                
-#                 # Crear eventos para los días de la semana donde esté el curso
-#                 for day_key, day_name in days_of_week.items():
-#                     if schedule.get(day_key):  # Verifica si el curso está en ese día ('l', 'm', 'i', 'j', 'v', 's')
-#                         # Calcular la posición y altura del evento
-#                         top_position = (time_ini - 6) * 45  # Ajustamos el cálculo para que empiece desde 6 AM
-#                         event_height = (time_fin - time_ini) * 45  # Altura basada en la duración del evento
-                        
-#                         # Ajustar el evento al día correcto en términos de columna
-#                         day_position = list(days_of_week.keys()).index(day_key) * (100 / len(days_of_week))  # Porcentaje del ancho de la columna
-
-#                         # Crear el evento para ese día y agregarlo al calendario
-#                         new_event = html.Div(
-#                             f"{course_title} ({classroom})", 
-#                             className="event-box",
-#                             style={
-#                                 "top": f"{top_position}px", 
-#                                 "height": f"{event_height}px",
-#                                 "position": "absolute",
-#                                 "left": f"{day_position}%",  # Posición en la columna del día
-#                                 "width": f"{100 / len(days_of_week) - 2}%",  # Ajuste del ancho del evento con margen
-#                                 "background-color": "#FFDDC1",
-#                                 "border-radius": "8px",
-#                                 "padding": "5px",
-#                                 "text-align": "center",
-#                                 "box-sizing": "border-box",  # Incluir padding y border en el ancho y alto
-#                                 "margin-left": "1%",  # Margen izquierdo para separar eventos
-#                                 "margin-right": "1%"  # Margen derecho para separar eventos
-#                             }
-#                         )
-#                         current_events.append(new_event)
-        
-#         return current_events
-
-#     return current_events
