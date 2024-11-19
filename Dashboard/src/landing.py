@@ -9,30 +9,30 @@ landing = html.Div(
         "height": "100vh",
         "backgroundColor": "#f5f5f5",
         "padding": "20px",
-        "gap": "30px",
+        "gap": "10px",
     },
     children=[
 
         # Imagen de la mascota
         html.Img(
             src="assets/Logo_Hadas.png",  # Asegúrate de tener la imagen en la carpeta 'assets'
-            style={"width": "150px", "marginBottom": "20px"},
+            style={"width": "150px", "marginBottom": "10px"},
         ),
 
         # Encabezado y bienvenida
-        html.H1("¡Bienvenid@ a HADAS!", style={"textAlign": "center", "color": "#333", "fontSize": "36px"}),
+        html.H1("¡Bienvenid@ a PredictMyCourses!", style={"textAlign": "center", "color": "#333", "fontSize": "36px"}),
 
         # Descripción del sistema
         html.P(
             "Aquí tendrás la oportunidad de planear tu horario académico ideal y conocer de antemano si "
-            "con tu turno de inscripción lograrás inscribirlo o no. HADAS es tu herramienta personalizada "
+            "con tu turno de inscripción lograrás inscribirlo o no. PredictMyCourses es tu herramienta personalizada "
             "para optimizar el proceso de inscripción de materias.",
             style={"textAlign": "center", "color": "#555", "maxWidth": "600px"},
         ),
         html.P(
             "Podrás explorar diferentes combinaciones de horarios, recibir recomendaciones basadas en tus "
             "preferencias y asegurarte de que tu plan se ajuste a tus necesidades. Olvídate del estrés de no "
-            "saber si alcanzarás un cupo en tu clase preferida; con HADAS, estarás un paso adelante y podrás "
+            "saber si alcanzarás un cupo en tu clase preferida; con PredictMyCourses, estarás un paso adelante y podrás "
             "tomar decisiones informadas para aprovechar al máximo tu experiencia académica.",
             style={"textAlign": "center", "color": "#555", "maxWidth": "600px"},
         ),

@@ -63,7 +63,7 @@ navbar = dbc.Navbar(
                             style={"display": "flex", "alignItems": "center"},
                             children=[
                                 html.Span(
-                                    "HA",
+                                    "PredictMy",
                                     style={
                                         "fontFamily": "'Irish Grover', cursive",
                                         "fontSize": "20px",
@@ -71,7 +71,7 @@ navbar = dbc.Navbar(
                                     }
                                 ),
                                 html.Span(
-                                    "DAS",
+                                    "Courses",
                                     style={
                                         "fontFamily": "'Irish Grover', cursive",
                                         "fontSize": "20px",

@@ -314,13 +314,12 @@ def update_dashboard(schedules_data, position):
 
         # Calcular la probabilidad de inscripción para el curso y el tiempo esperado de llenado
         probability, expected_fill_time = predict_course_probability(course, position)
-        print(f"Probabilidad de inscripción para el curso {course.nrc}: {probability}")
-        print(f"Tiempo esperado de llenado del curso {course.nrc}: {expected_fill_time}")
+        #print(f"Probabilidad de inscripción para el curso {course.nrc}: {probability}")
+        #print(f"Tiempo esperado de llenado del curso {course.nrc}: {expected_fill_time}")
 
         # Multiplicar la probabilidad al total
         total_probability *= probability
 
-        print(section.keys())
 
         # Crear eventos y resumen de eventos
         for schedule in section['schedules']:
@@ -350,13 +349,13 @@ def update_dashboard(schedules_data, position):
                         [
                             # Lado frontal de la tarjeta
                             html.Div(
-                                f"{alert_emoji}{section['title']} - sección: {section['section']} - Probabilidad: {int(probability * 100)}%",
+                                f"{alert_emoji}{section['title']} - sección: {section['section']} - Probabilidad de inscripción: {int(probability * 100)}%",
                                 className="flip-front",
                                 style={"backgroundColor": background_color, "color": "black"}
                             ),
                             # Lado trasero de la tarjeta
                             html.Div(
-                                f"Esperado: {expected_fill_time.strftime('%Y-%m-%d %H:%M') if expected_fill_time else 'No disponible'} \n Profesor: {profesors}",
+                                f"Disponible hasta: {expected_fill_time.strftime('%Y-%m-%d %H:%M') if expected_fill_time else 'No disponible'} \n Profesor: {profesors}",
                                 className="flip-back",
                                 style={"backgroundColor": background_color, "color": "black"}
                             ),

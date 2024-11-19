@@ -14,7 +14,7 @@ app = dash.Dash(
     suppress_callback_exceptions=True,
 )
 
-app.title = "Hadas: Dashboard de Horario"
+app.title = "PredictMyCourses: Dashboard de Horario"
 app.layout = layout
 
 if __name__ == '__main__':
