@@ -11,6 +11,8 @@ from model import predict_course_probability,Course
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
+from dash.exceptions import PreventUpdate
+
 
 # Obtener el colormap "Blues"
 cmap = plt.get_cmap("Blues")
@@ -99,6 +101,11 @@ def add_new_plan(n_clicks, current_plans):
     Input("url", "pathname")
 )
 def display_page(pathname):
+    # Si la ruta comienza con "/api", permite que Flask maneje la solicitud
+    if pathname.startswith("/api"):
+        raise PreventUpdate  # Evita que Dash procese esta ruta
+
+
     if pathname == "/":
         return landing
     if pathname == "/resumen":
@@ -314,12 +321,13 @@ def update_dashboard(schedules_data, position):
 
         # Calcular la probabilidad de inscripción para el curso y el tiempo esperado de llenado
         probability, expected_fill_time = predict_course_probability(course, position)
-        #print(f"Probabilidad de inscripción para el curso {course.nrc}: {probability}")
-        #print(f"Tiempo esperado de llenado del curso {course.nrc}: {expected_fill_time}")
+        print(f"Probabilidad de inscripción para el curso {course.nrc}: {probability}")
+        print(f"Tiempo esperado de llenado del curso {course.nrc}: {expected_fill_time}")
 
         # Multiplicar la probabilidad al total
         total_probability *= probability
 
+        print(section.keys())
 
         # Crear eventos y resumen de eventos
         for schedule in section['schedules']:
@@ -341,7 +349,7 @@ def update_dashboard(schedules_data, position):
                 # Obtener el color de fondo según la probabilidad
                 background_color = get_color_from_probability(1 - probability)
                 profesors = ", ".join(section['instructors'])
-                alert_emoji = "⚠️ " if probability < 0.5 else ""
+                alert_emoji = "⚠ " if probability < 0.5 else ""
                 
                 # Crear nuevo evento con animación de flip card
                 new_event = html.Div(
@@ -349,13 +357,13 @@ def update_dashboard(schedules_data, position):
                         [
                             # Lado frontal de la tarjeta
                             html.Div(
-                                f"{alert_emoji}{section['title']} - sección: {section['section']} - Probabilidad de inscripción: {int(probability * 100)}%",
+                                f"{alert_emoji}{section['title']} - sección: {section['section']} - Probabilidad: {int(probability * 100)}%",
                                 className="flip-front",
                                 style={"backgroundColor": background_color, "color": "black"}
                             ),
                             # Lado trasero de la tarjeta
                             html.Div(
-                                f"Disponible hasta: {expected_fill_time.strftime('%Y-%m-%d %H:%M') if expected_fill_time else 'No disponible'} \n Profesor: {profesors}",
+                                f"Esperado: {expected_fill_time.strftime('%Y-%m-%d %H:%M') if expected_fill_time else 'No disponible'} \n Profesor: {profesors}",
                                 className="flip-back",
                                 style={"backgroundColor": background_color, "color": "black"}
                             ),

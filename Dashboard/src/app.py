@@ -4,19 +4,22 @@ import dash_bootstrap_components as dbc
 from layout import layout
 import callbacks
 
+from backend import app
+
 import warnings
 warnings.filterwarnings("ignore")
 
 # Inicializar la aplicación
-app = dash.Dash(
+app_dash = dash.Dash(
     __name__, 
+    server=app,
     external_stylesheets=[dbc.themes.BOOTSTRAP, "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"],
     suppress_callback_exceptions=True,
+    url_base_pathname="/",
 )
 
-app.title = "PredictMyCourses: Dashboard de Horario"
-app.layout = layout
+app_dash.title = "Hadas: Dashboard de Horario"
+app_dash.layout = layout
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
-    
+    app_dash.run_server(debug=True, use_reloader=False)
