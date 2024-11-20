@@ -6,3 +6,9 @@ dash-renderer
 plotly
 flask_sqlalchemy
 python-dotenv
+scikit-learn==1.4.0
+scikit-survival
+matplotlib
+numpy
+scipy
+pandas

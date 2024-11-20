@@ -11,7 +11,7 @@ class State:
 
     _data = None
     _scheduler = None
-    default_dataset_name = "2024-10"
+    default_dataset_name = "Empty"
 
     def __init__(self):
         """

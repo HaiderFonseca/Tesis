@@ -4,7 +4,11 @@ def load_and_preprocess_transactions(data_path, previous_time_column, current_ti
     """
     Load and preprocess transactions
     """
-    data = pd.read_csv(data_path, parse_dates=[previous_time_column, current_time_column], date_format='%Y-%m-%d %H.%M.%S')
+    data = pd.read_csv(data_path, parse_dates=[previous_time_column, current_time_column], date_format='%Y-%m-%d %H.%M.%S', dtype={'nrc': 'int64', 'delta_enrolled': 'int64'})
+    if len(data) == 0:
+        data[previous_time_column] = pd.Timestamp.min
+        data[current_time_column] = pd.Timestamp.min
+        return data
     for time_column in [previous_time_column, current_time_column]:
         # Convert from UTC to UTC-5 (Colombia time)
         data[time_column] = data[time_column] - pd.Timedelta(hours=5)
@@ -16,6 +20,8 @@ def get_initial_time(df, *time_columns):
     """
     Get the initial time
     """
+    if len(df) == 0:
+        return pd.Timestamp.min
     assert all(df[column].dtype == 'datetime64[ns]' for column in time_columns)
     return df[list(time_columns)].min().min()
 
@@ -23,6 +29,8 @@ def get_time_steps_count(df, natural_tick_interval, *time_columns):
     """
     Get the unique times count
     """
+    if len(df) == 0:
+        return 0
     assert all(df[column].dtype == 'datetime64[ns]' for column in time_columns)
     return int((df[list(time_columns)].max().max() - df[list(time_columns)].min().min()).total_seconds() // natural_tick_interval) + 1
 

@@ -11,7 +11,7 @@ class Dataset:
 
     natural_tick_interval = 5 * 60
 
-    datasets_dir_path = "datasets"
+    datasets_dir_path = "../Datos"
     initial_state_json_path = "initial_state.json"
     transactions_csv_path = "transactions.csv"
 
