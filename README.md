@@ -7,17 +7,18 @@ Verificar que model y scaler estén en la carpeta Dashboard , se genera corriend
 
 Ahora sí:
 
-1. Activar el ambiente virtual si no está ya activado por visual (comando source .venv/bin/activate)
-   2)Abrir 2 terminales y que ambas tengan el ambiente virtual activao
-   3)En la primera terminal ejecutar el simulador (comando fastapi run ) #El simulador empieza con un dataset vacío , debe ser ejecutado en la carpeta simulador
-   4)Si se quiere reiniciar desde 0 borrar el archivo instance/enrollment.db #Este se crea automático al ejecutar el dashboard
-   5)En la segunda terminal ejecutar el dashboard (comando python src/app.py), debe ser ejecutado en la carpeta Dashboard #Esperar a que se termine de cargar
-   6)Enviar una petición en "simulador reset" de "Send" en thunder si esto no funciona se puede hacer este comando en una nueva terminal. # Body dentro de "tick_interval" se puede cambiar cada cuanto se actualiza el simulador y otras cosas.
+\*Cada vez que se reinicia hay que reiniciar desde 0 borrar el archivo instance/enrollment.db #Este se crea automático al ejecutar el dashboard
+
+1. Activar el ambiente virtual ,si no está ya activado por visual (comando source .venv/bin/activate)
+2. Abrir 2 terminales y que ambas tengan el ambiente virtual activao #Izquierda el (.venv)
+3. En la primera terminal ejecutar el simulador (comando fastapi run ) #El simulador empieza con un dataset vacío , debe ser ejecutado en la carpeta simulador
+4. En la segunda terminal ejecutar el dashboard (comando python src/app.py), debe ser ejecutado en la carpeta Dashboard #Esperar a que se termine de cargar
+5. Enviar una petición en "simulador reset" de "Send" en thunder si esto no funciona se puede hacer este comando en una nueva terminal. # Body dentro de "tick_interval" se puede cambiar cada cuanto se actualiza el simulador y otras cosas.
 
 curl -X POST "http://localhost:8000/restart" -H "accept: application/json" -H "Content-Type: application/json" -d "{\"dataset_name\":\"2024-20\",\"tick_interval\":10}"
 
-7)Revisar en la base de datos enrollment.db que se estén guardando los datos
-8)En este punto el Dashboard debería mostrar el histórico de inscripciones en el endpoint (Mirar el ejemplo de Preca y analítica con thunder)
+7. Revisar en la base de datos enrollment.db que se estén guardando los datos
+8. En este punto el Dashboard debería mostrar el histórico de inscripciones en el endpoint (Mirar el ejemplo de Preca y analítica con thunder)
 
 http://127.0.0.1:8050/api/history/{NRC}
 
