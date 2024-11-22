@@ -4,26 +4,15 @@ import dash_bootstrap_components as dbc
 summary = html.Div(
     style={"backgroundColor": "#F7F7F7", "padding": "20px"},
     children=[
-        # Navbar con el logo y título
-        dbc.Navbar(
-            html.Div(
-                style={
-                    "display": "flex",
-                    "justifyContent": "space-between",
-                    "alignItems": "center",
-                    "width": "100%",
-                },
-                children=[
-                    html.Button(
-                        html.I(className="fas fa-bars"),
-                        style={"border": "none", "background": "transparent", "cursor": "pointer"},
-                    ),
-                    html.H2("IIND1000 - SECCIÓN 01  INTRODUCCIÓN A INGENIERÍA INDUSTRIAL", style={"textAlign": "center", "margin": "0"}),
-                    html.Img(src="/assets/Logo_Hadas.png", style={"height": "50px"}),
-                ],
-            ),
-            color="#FFF",
-            sticky="top",
+        # Encabezado con solo texto
+        html.Div(
+            style={
+                "textAlign": "center",
+                "fontSize": "24px",
+                "fontWeight": "bold",
+                "marginBottom": "20px",
+            },
+            children="IIND1000 - SECCIÓN 01  INTRODUCCIÓN A INGENIERÍA INDUSTRIAL",
         ),
 
         # Contenido Principal
