@@ -1,6 +1,13 @@
-from dash import html, dcc
+from dash import html, dcc, Input, Output,callback
 import dash_bootstrap_components as dbc
+import requests
+import pandas as pd
+import plotly.graph_objs as go
 
+# ID del NRC predeterminado
+NRC = 58409
+
+# Componentes del layout
 summary = html.Div(
     style={"backgroundColor": "#F7F7F7", "padding": "20px"},
     children=[
@@ -19,7 +26,7 @@ summary = html.Div(
         html.Div(
             style={"display": "grid", "gridTemplateColumns": "2fr 1fr", "gap": "20px", "marginTop": "20px"},
             children=[
-                # Gráfico (Placeholder)
+                # Gráfico
                 html.Div(
                     style={
                         "borderRadius": "20px",
@@ -27,14 +34,7 @@ summary = html.Div(
                         "padding": "20px",
                         "boxShadow": "0 4px 8px rgba(0, 0, 0, 0.1)",
                     },
-                    children=dcc.Graph(
-                        figure={
-                            "data": [
-                                {"x": ["Lun", "Mar", "Mie", "Jue", "Vie", "Sab", "Dom"], "y": [10, 12, 8, 15, 10, 5, 20], "type": "line"}
-                            ],
-                            "layout": {"title": "Probabilidad por día", "paper_bgcolor": "rgba(0,0,0,0)", "plot_bgcolor": "rgba(0,0,0,0)"}
-                        }
-                    ),
+                    children=dcc.Graph(id="dynamic-graph"),
                 ),
                 # Panel de Probabilidad y Cupos
                 html.Div(
@@ -134,3 +134,32 @@ summary = html.Div(
         ),
     ]
 )
+
+# Callback para actualizar la gráfica
+@callback(
+    Output("dynamic-graph", "figure"),
+    Input("dynamic-graph", "id")  # Este input es solo un trigger, no se usa
+)
+def update_graph(_):
+    # Llamada al endpoint
+    endpoint = f"http://127.0.0.1:8050/api/history/{NRC}"
+    response = requests.get(endpoint)
+    data = response.json()
+
+    # Transformar los datos en un DataFrame
+    df = pd.DataFrame(data)
+    df["timestamp"] = pd.to_datetime(df["timestamp"])
+    df = df.sort_values("timestamp")
+
+    # Crear la figura
+    figure = go.Figure(
+        data=go.Scatter(x=df["timestamp"], y=df["enrolled"], mode="lines+markers"),
+        layout=go.Layout(
+            title="Historial de Inscripciones",
+            xaxis={"title": "Tiempo"},
+            yaxis={"title": "Inscritos"},
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+        )
+    )
+    return figure
