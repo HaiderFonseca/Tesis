@@ -7,7 +7,6 @@ import plotly.graph_objs as go
 # ID del NRC predeterminado
 NRC = 58409
 
-# Componentes del layout
 summary = html.Div(
     style={"backgroundColor": "#F7F7F7", "padding": "20px"},
     children=[
@@ -19,14 +18,14 @@ summary = html.Div(
                 "fontWeight": "bold",
                 "marginBottom": "20px",
             },
-            children="IIND1000 - SECCIÓN 01  INTRODUCCIÓN A INGENIERÍA INDUSTRIAL",
+            children=NRC,
         ),
 
         # Contenido Principal
         html.Div(
             style={"display": "grid", "gridTemplateColumns": "2fr 1fr", "gap": "20px", "marginTop": "20px"},
             children=[
-                # Gráfico
+                # Gráfico (Placeholder)
                 html.Div(
                     style={
                         "borderRadius": "20px",
@@ -36,10 +35,12 @@ summary = html.Div(
                     },
                     children=dcc.Graph(id="dynamic-graph"),
                 ),
-                # Panel de Probabilidad y Cupos
+
+                # Panel de Probabilidad, Cupos y Turno
                 html.Div(
                     style={"display": "flex", "flexDirection": "column", "gap": "20px"},
                     children=[
+                        # Turno en contenedor estilizado con color de fondo
                         html.Div(
                             style={
                                 "borderRadius": "20px",
@@ -50,23 +51,94 @@ summary = html.Div(
                             },
                             children=[
                                 html.H4("Turno", style={"marginBottom": "10px"}),
+
+                                # Rectángulo con color para el turno
                                 html.Div(
-                                    style={"display": "flex", "gap": "10px", "justifyContent": "center"},
+                                    style={
+                                        "backgroundColor": "#FFF8E8",
+                                        "borderRadius": "20px",
+                                        "padding": "10px",
+                                        "display": "inline-flex",
+                                        "gap": "10px",
+                                        "alignItems": "center",
+                                        "justifyContent": "center",
+                                    },
                                     children=[
-                                        dcc.Input(placeholder="DD", type="number", min=1, max=31, style={"width": "50px", "textAlign": "center"}),
-                                        dcc.Input(placeholder="MM", type="number", min=1, max=12, style={"width": "50px", "textAlign": "center"}),
-                                        dcc.Input(placeholder="AAAA", type="number", min=1900, max=2100, style={"width": "70px", "textAlign": "center"}),
-                                        dcc.Input(placeholder="HH", type="number", min=0, max=23, style={"width": "50px", "textAlign": "center"}),
-                                        html.Span(":", style={"fontSize": "24px"}),
-                                        dcc.Input(placeholder="MM", type="number", min=0, max=59, style={"width": "50px", "textAlign": "center"}),
+                                        # Día
+                                        dcc.Input(
+                                            type="number", id="input-day", placeholder="DD", min=1, max=31,
+                                            style={
+                                                "width": "50px", "textAlign": "center",
+                                                "borderRadius": "10px",
+                                                "backgroundColor": "#FFFFFF",
+                                                "fontSize": "14px",
+                                                "border": "1px solid #ccc",
+                                            }
+                                        ),
+                                        # Mes
+                                        dcc.Input(
+                                            type="number", id="input-month", placeholder="MM", min=1, max=12,
+                                            style={
+                                                "width": "50px", "textAlign": "center",
+                                                "borderRadius": "10px",
+                                                "backgroundColor": "#FFFFFF",
+                                                "fontSize": "14px",
+                                                "border": "1px solid #ccc",
+                                            }
+                                        ),
+                                        # Año
+                                        dcc.Input(
+                                            type="number", id="input-year", placeholder="AAAA", min=1900, max=2100,
+                                            style={
+                                                "width": "60px", "textAlign": "center",
+                                                "borderRadius": "10px",
+                                                "backgroundColor": "#FFFFFF",
+                                                "fontSize": "14px",
+                                                "border": "1px solid #ccc",
+                                            }
+                                        ),
+                                        # Hora
+                                        html.Div(
+                                            children=[
+                                                dcc.Input(
+                                                    type="number", id="input-hour", placeholder="HH", min=0, max=23,
+                                                    style={
+                                                        "width": "50px", "textAlign": "center",
+                                                        "borderRadius": "10px",
+                                                        "backgroundColor": "#FFFFFF",
+                                                        "fontSize": "14px",
+                                                        "border": "1px solid #ccc",
+                                                    }
+                                                ),
+                                                html.Span(":", style={"margin": "0 5px", "fontSize": "18px"}),
+                                                dcc.Input(
+                                                    type="number", id="input-minute", placeholder="MM", min=0, max=59,
+                                                    style={
+                                                        "width": "50px", "textAlign": "center",
+                                                        "borderRadius": "10px",
+                                                        "backgroundColor": "#FFFFFF",
+                                                        "fontSize": "14px",
+                                                        "border": "1px solid #ccc",
+                                                    }
+                                                ),
+                                            ],
+                                            style={"display": "flex", "alignItems": "center"},
+                                        ),
+                                        # Botón guardar con emoji
+                                        html.Button(
+                                            html.I(className="fas fa-save", style={"color": "#F0A500"}),
+                                            style={
+                                                "border": "none", "backgroundColor": "transparent",
+                                                "cursor": "pointer"
+                                            },
+                                            id="position-set-button"  # ID del botón para el callback
+                                        ),
                                     ],
                                 ),
-                                html.Button(
-                                    html.I(className="fas fa-paper-plane", style={"color": "blue"}),
-                                    style={"border": "none", "background": "transparent", "cursor": "pointer", "marginTop": "10px"}
-                                )
-                            ]
+                            ],
                         ),
+
+                        # Probabilidad
                         html.Div(
                             style={
                                 "borderRadius": "20px",
@@ -80,6 +152,8 @@ summary = html.Div(
                                 html.Div("28%", style={"fontSize": "36px", "fontWeight": "bold"}),
                             ]
                         ),
+
+                        # Cupos disponibles
                         html.Div(
                             style={
                                 "borderRadius": "20px",
@@ -134,6 +208,8 @@ summary = html.Div(
         ),
     ]
 )
+
+
 
 # Callback para actualizar la gráfica
 @callback(

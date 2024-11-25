@@ -8,10 +8,13 @@ import time
 from datetime import datetime
 from collections import Counter
 
+print("Loading backend...")
+
 # Cargar variables de entorno
 load_dotenv()
 API_URL = os.getenv("API_URL")
 POLL_INTERVAL = int(os.getenv("POLL_INTERVAL"))
+POLLING_ENABLED = os.getenv("POLLING_ENABLED", "true").lower() in ["true", "1", "yes"]
 
 # Configuración de Flask y SQLite
 app = Flask(__name__)
@@ -140,11 +143,12 @@ def get_latest_course(nrc):
 app.register_blueprint(api_blueprint)
 
 # Crear un evento para controlar si el hilo ya está en ejecución
-polling_started = threading.Event()
+if POLLING_ENABLED:
+    polling_started = threading.Event()
 
-# Iniciar el hilo del polling solo si no está en ejecución
-if not polling_started.is_set():
-    polling_thread = threading.Thread(target=poll_api, daemon=True)
-    polling_thread.start()
-    polling_started.set()
+    # Iniciar el hilo del polling solo si no está en ejecución
+    if not polling_started.is_set():
+        polling_thread = threading.Thread(target=poll_api, daemon=True)
+        polling_thread.start()
+        polling_started.set()
 
