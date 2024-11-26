@@ -17,6 +17,10 @@ day_categories = ["l", "m", "i", "j", "v", "s", "d"]  # Días de la semana (Lune
 time_categories = ['06:30-06:60', '07:00-07:30', '07:30-07:60', '08:00-08:30', '08:30-08:60', '09:00-09:30', '09:30-09:60', '10:00-10:30', '10:30-10:60', '11:00-11:30', '11:30-11:60', '12:00-12:30', '12:30-12:60', '13:00-13:30', '13:30-13:60', '14:00-14:30', '14:30-14:60', '15:00-15:30', '15:30-15:60', '16:00-16:30', '16:30-16:60', '17:00-17:30', '17:30-17:60', '18:00-18:30', '18:30-18:60', '19:00-19:30', '19:30-19:60', '20:00-20:30', '20:30-20:60', '21:00-21:30']
 # Función principal para la predicción
 
+# Fecha de inscripción inicial
+FIRST_ENROLLMENT_TIME = pd.Timestamp("2024-07-17 08:00:00")
+
+
 # Cargar el scaler y el modelo desde archivos pickle
 def load_scaler_model():
     with open("scaler.pkl", "rb") as scaler_file:
@@ -31,7 +35,7 @@ scaler, model = load_scaler_model()
 #####-----------------------------------------------------------------------
 # Definimos una clase Course para encapsular los datos de cada curso
 class Course:
-    def __init__(self, nrc, schedules, course_level, course_class, ptrmdesc, first_enrollment_time):
+    def _init_(self, nrc, schedules, course_level, course_class, ptrmdesc, first_enrollment_time):
 
         ptrmdesc_mapper={ 
             '16 SEMANAS':'PERIODO 202420 - 16 SEMANAS'
@@ -145,5 +149,3 @@ def predict_course_probability(course, enrollment_time):
         fill_time = None
 
     return survival_prob, fill_time
-
-
