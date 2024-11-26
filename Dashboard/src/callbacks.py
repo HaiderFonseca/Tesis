@@ -6,8 +6,8 @@ import dash
 import json
 from plan import create_plan_page
 from landing import landing
-from summary import summary
-from model import predict_course_probability,Course
+from summary import create_summary_page
+from model import predict_course_probability, Course, FIRST_ENROLLMENT_TIME
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
@@ -33,10 +33,6 @@ def get_color_from_probability(probability):
 
     # Mapear la probabilidad a un color
     rgba_color = cmap(probability)
-
-    # Si la probabilidad es 0, retorna azul oscuro
-    if probability == 0:
-        return "#0B3D91"  # Azul oscuro personalizado
 
     # Convertir el color RGBA a formato hexadecimal
     hex_color = mcolors.to_hex(rgba_color)
@@ -112,8 +108,9 @@ def display_page(pathname):
 
     if pathname == "/":
         return landing
-    if pathname == "/resumen":
-        return summary
+    elif pathname.startswith("/resumen/"):
+        nrc = pathname.split("/")[2]
+        return create_summary_page(nrc)
     elif pathname.startswith("/plan-"):
         plan_num = pathname.split("-")[1]
         layout = create_plan_page(plan_num)
@@ -282,8 +279,6 @@ def show_course_sections(n_clicks, courses_by_code, search_detail_style, search_
     return section_rows, search_detail_style, search_results_style
 
 
-# Fecha de inscripción inicial
-FIRST_ENROLLMENT_TIME = pd.Timestamp("2024-07-17 08:00:00")
 
 # Unificación de los callbacks
 @callback(
@@ -302,14 +297,13 @@ def update_dashboard(schedules_data, position):
     if not schedules_data or not position:
         return [], dash.no_update, []
     
+
+    
     summary_events = []
     displayed_events = []
     total_probability = 1  # Probabilidad combinada de inscribir todos los cursos
     position = pd.Timestamp(position)
 
-
-    # Fecha límite (un mes después del inicio de los cursos)
-    enrollment_deadline = FIRST_ENROLLMENT_TIME + pd.Timedelta(days=50)
 
     # Procesar cada curso en schedules
     for section in schedules_data:
@@ -322,16 +316,10 @@ def update_dashboard(schedules_data, position):
             ptrmdesc=section['ptrmdesc'],
             first_enrollment_time=FIRST_ENROLLMENT_TIME
         )
+       
 
-        # Calcular la probabilidad de inscripción para el curso
-        if position  > enrollment_deadline:
-            # Si ha pasado más de un mes, la probabilidad es cero
-            probability = 0
-            expected_fill_time = None
-        else:
-            # Calcular la probabilidad normal si aún estamos dentro del plazo
-            probability, expected_fill_time = predict_course_probability(course, position)
-
+        # Calcular la probabilidad de inscripción para el curso y el tiempo esperado de llenado
+        probability, expected_fill_time = predict_course_probability(course, position)
         print(f"Probabilidad de inscripción para el curso {course.nrc}: {probability}")
         print(f"Tiempo esperado de llenado del curso {course.nrc}: {expected_fill_time}")
 
@@ -358,10 +346,7 @@ def update_dashboard(schedules_data, position):
                 height = duration_min * calendar_height / time_span
 
                 # Obtener el color de fondo según la probabilidad
-                if probability == 0:
-                    background_color = "#0B3D91"  # Azul oscuro para probabilidad 0
-                else:
-                    background_color = get_color_from_probability(1 - probability)
+                background_color = get_color_from_probability(1 - probability)
                 profesors = ", ".join(section['instructors'])
                 alert_emoji = "⚠ " if probability < 0.5 else ""
                 
@@ -371,38 +356,15 @@ def update_dashboard(schedules_data, position):
                         [
                             # Lado frontal de la tarjeta
                             html.Div(
-                                f"{alert_emoji}{section['title']} - sección: {section['section']} - Probabilidad de inscripción: {int(probability * 100)}%",
+                                f"{alert_emoji}{section['title']} - sección: {section['section']} - Probabilidad: {int(probability * 100)}%",
                                 className="flip-front",
                                 style={"backgroundColor": background_color, "color": "black"}
                             ),
                             # Lado trasero de la tarjeta
                             html.Div(
-                                [
-                                    html.Div(
-                                        f"Esperado: {expected_fill_time.strftime('%Y-%m-%d %H:%M') if expected_fill_time else 'No disponible'} \n Profesor: {profesors}",
-                                        style={"marginBottom": "10px"}
-                                    ),
-                                    # Sección del botón y texto "HISTÓRICO"
-                                    html.Div(
-                                        [
-                                            html.Button(
-                                                html.I(className="fas fa-chart-line", style={"color": "#007BFF"}),  # Ícono de gráfica
-                                                style={
-                                                    "border": "2px solid #007BFF",  # Borde azul
-                                                    "borderRadius": "5px",
-                                                    "cursor": "pointer",
-                                                    "color": "#007BFF",  # Texto azul
-                                                    "fontWeight": "bold",
-                                                    "marginLeft": "8px"
-                                                },
-                                                id=f"historic-button-{section['nrc']}"
-                                            )
-                                        ],
-                                        style={"display": "flex", "alignItems": "center", "justifyContent": "space-between"}
-                                    )
-                                ],
+                                f"Esperado: {expected_fill_time.strftime('%Y-%m-%d %H:%M') if expected_fill_time else 'No disponible'} \n Profesor: {profesors}",
                                 className="flip-back",
-                                style={"backgroundColor": background_color, "color": "black", "padding": "10px"}
+                                style={"backgroundColor": background_color, "color": "black"}
                             ),
                         ],
                         className="flip-inner"
