@@ -122,18 +122,6 @@ landing = html.Div(
                 "cursor": "pointer"
             },
             id="position-set-button"  # ID del botón para el callback
-        ),
-
-        # Botón flotante de ayuda (opcional)
-        html.Div(
-            html.I(className="fas fa-question-circle", style={"color": "#fff"}),
-            style={
-                "position": "fixed", "bottom": "20px", "right": "20px",
-                "width": "50px", "height": "50px", "borderRadius": "50%",
-                "backgroundColor": "#F0A500", "display": "flex",
-                "alignItems": "center", "justifyContent": "center",
-                "cursor": "pointer", "boxShadow": "0 2px 5px rgba(0, 0, 0, 0.3)"
-            }
         )
     ]
 )

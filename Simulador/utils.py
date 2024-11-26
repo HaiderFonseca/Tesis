@@ -1,4 +1,5 @@
 import pandas as pd
+import unicodedata
 
 def load_and_preprocess_transactions(data_path, previous_time_column, current_time_column):
     """
@@ -45,3 +46,9 @@ def apply_transactions(data, transactions, timestamp, current_time_column, nrc_c
             delta = current_transactions[current_transactions[nrc_column] == int(course_section['nrc'])][delta_enrolled_column].sum()
             course_section['enrolled'] = str(int(course_section['enrolled']) + delta)
     return affected_nrcs.shape[0]
+
+def normalize_text(text):
+    """Normaliza un texto eliminando acentos y convirtiendo a minúsculas."""
+    if not text:
+        return ""
+    return unicodedata.normalize('NFKD', text).encode('ascii', 'ignore').decode('utf-8').lower()
