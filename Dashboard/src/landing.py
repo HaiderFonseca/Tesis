@@ -20,19 +20,19 @@ landing = html.Div(
         ),
 
         # Encabezado y bienvenida
-        html.H1("¡Bienvenid@ a PredictMyCourses!", style={"textAlign": "center", "color": "#333", "fontSize": "36px"}),
+        html.H1("¡Bienvenid@ a Wizard Séneca!", style={"textAlign": "center", "color": "#333", "fontSize": "36px"}),
 
         # Descripción del sistema
         html.P(
             "Aquí tendrás la oportunidad de planear tu horario académico ideal y conocer de antemano si "
-            "con tu turno de inscripción lograrás inscribirlo o no. PredictMyCourses es tu herramienta personalizada "
+            "con tu turno de inscripción lograrás inscribirlo o no. Wizard Séneca es tu herramienta personalizada "
             "para optimizar el proceso de inscripción de materias.",
             style={"textAlign": "center", "color": "#555", "maxWidth": "600px"},
         ),
         html.P(
             "Podrás explorar diferentes combinaciones de horarios, recibir recomendaciones basadas en tus "
             "preferencias y asegurarte de que tu plan se ajuste a tus necesidades. Olvídate del estrés de no "
-            "saber si alcanzarás un cupo en tu clase preferida; con PredictMyCourses, estarás un paso adelante y podrás "
+            "saber si alcanzarás un cupo en tu clase preferida; con Wizard Séneca, estarás un paso adelante y podrás "
             "tomar decisiones informadas para aprovechar al máximo tu experiencia académica.",
             style={"textAlign": "center", "color": "#555", "maxWidth": "600px"},
         ),

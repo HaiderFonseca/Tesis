@@ -20,9 +20,9 @@ app_dash = dash.Dash(
     url_base_pathname="/",
 )
 
-app_dash.title = "Hadas: Dashboard de Horario"
+app_dash.title = "Wizard Séneca"
 app_dash.layout = layout
 
 if __name__ == '__main__':
-    app_dash.run_server(debug=True, use_reloader=not POLLING_ENABLED)  # poner reloader en True solo si no me conecto al simulador
+    app_dash.run_server(debug=False, use_reloader=not POLLING_ENABLED)  # poner reloader en True solo si no me conecto al simulador
     

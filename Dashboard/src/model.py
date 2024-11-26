@@ -35,7 +35,7 @@ scaler, model = load_scaler_model()
 #####-----------------------------------------------------------------------
 # Definimos una clase Course para encapsular los datos de cada curso
 class Course:
-    def _init_(self, nrc, schedules, course_level, course_class, ptrmdesc, first_enrollment_time):
+    def __init__(self, nrc, schedules, course_level, course_class, ptrmdesc, first_enrollment_time):
 
         ptrmdesc_mapper={ 
             '16 SEMANAS':'PERIODO 202420 - 16 SEMANAS'
