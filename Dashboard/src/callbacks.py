@@ -304,6 +304,8 @@ def update_dashboard(schedules_data, position):
     total_probability = 1  # Probabilidad combinada de inscribir todos los cursos
     position = pd.Timestamp(position)
 
+    # Fecha límite (un mes después del inicio de los cursos)
+    enrollment_deadline = FIRST_ENROLLMENT_TIME + pd.Timedelta(days=50)
 
     # Procesar cada curso en schedules
     for section in schedules_data:
@@ -318,8 +320,15 @@ def update_dashboard(schedules_data, position):
         )
        
 
-        # Calcular la probabilidad de inscripción para el curso y el tiempo esperado de llenado
-        probability, expected_fill_time = predict_course_probability(course, position)
+        # Calcular la probabilidad de inscripción para el curso
+        if position  > enrollment_deadline:
+            # Si ha pasado más de un mes, la probabilidad es cero
+            probability = 0
+            expected_fill_time = None
+        else:
+            # Calcular la probabilidad normal si aún estamos dentro del plazo
+            probability, expected_fill_time = predict_course_probability(course, position)
+
         print(f"Probabilidad de inscripción para el curso {course.nrc}: {probability}")
         print(f"Tiempo esperado de llenado del curso {course.nrc}: {expected_fill_time}")
 
@@ -346,7 +355,10 @@ def update_dashboard(schedules_data, position):
                 height = duration_min * calendar_height / time_span
 
                 # Obtener el color de fondo según la probabilidad
-                background_color = get_color_from_probability(1 - probability)
+                if probability == 0:
+                    background_color = "#0B3D91"  # Azul oscuro para probabilidad 0
+                else:
+                    background_color = get_color_from_probability(1 - probability)
                 profesors = ", ".join(section['instructors'])
                 alert_emoji = "⚠ " if probability < 0.5 else ""
                 
@@ -356,15 +368,38 @@ def update_dashboard(schedules_data, position):
                         [
                             # Lado frontal de la tarjeta
                             html.Div(
-                                f"{alert_emoji}{section['title']} - sección: {section['section']} - Probabilidad: {int(probability * 100)}%",
+                                f"{alert_emoji}{section['title']} - sección: {section['section']} - Probabilidad de inscripción: {int(probability * 100)}%",
                                 className="flip-front",
                                 style={"backgroundColor": background_color, "color": "black"}
                             ),
                             # Lado trasero de la tarjeta
                             html.Div(
-                                f"Esperado: {expected_fill_time.strftime('%Y-%m-%d %H:%M') if expected_fill_time else 'No disponible'} \n Profesor: {profesors}",
+                                [
+                                    html.Div(
+                                        f"Esperado: {expected_fill_time.strftime('%Y-%m-%d %H:%M') if expected_fill_time else 'No disponible'} \n Profesor: {profesors}",
+                                        style={"marginBottom": "10px"}
+                                    ),
+                                    # Sección del botón y texto "HISTÓRICO"
+                                    html.Div(
+                                        [
+                                            html.Button(
+                                                html.I(className="fas fa-chart-line", style={"color": "#007BFF"}),  # Ícono de gráfica
+                                                style={
+                                                    "border": "2px solid #007BFF",  # Borde azul
+                                                    "borderRadius": "5px",
+                                                    "cursor": "pointer",
+                                                    "color": "#007BFF",  # Texto azul
+                                                    "fontWeight": "bold",
+                                                    "marginLeft": "8px"
+                                                },
+                                                id=f"historic-button-{section['nrc']}"
+                                            )
+                                        ],
+                                        style={"display": "flex", "alignItems": "center", "justifyContent": "space-between"}
+                                    )
+                                ],                          
                                 className="flip-back",
-                                style={"backgroundColor": background_color, "color": "black"}
+                                style={"backgroundColor": background_color, "color": "black", "padding": "10px"}
                             ),
                         ],
                         className="flip-inner"
