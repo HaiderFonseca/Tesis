@@ -12,6 +12,10 @@ landing = html.Div(
         "gap": "10px",
     },
     children=[
+      
+        # IDS no utilizados en esta página, previenen errores de id not found en callbacks
+        html.Div(id="events-container", style={"display": "none"}),
+        html.Div(id="progress-panel", style={"display": "none"}),
 
         # Imagen de la mascota
         html.Img(
@@ -110,7 +114,7 @@ landing = html.Div(
         ),
 
         # Botón de guardar
-        html.Button(
+        html.A(
             "Ingresar",  # Texto del botón
             style={
                 "backgroundColor": "#F0A500",
@@ -119,9 +123,12 @@ landing = html.Div(
                 "borderRadius": "20px",
                 "padding": "10px 20px",
                 "fontSize": "16px",
-                "cursor": "pointer"
+                "cursor": "pointer",
+                "textDecoration": "none",
+                "display": "block",
             },
-            id="position-set-button"  # ID del botón para el callback
+            id="position-set-button",  # ID del botón para el callback
+            href="#"  # Redirige a la página de planificación
         )
     ]
 )

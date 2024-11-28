@@ -6,12 +6,6 @@ from modal import modal
 sidebar = html.Div(
     id="sidebar",
     children=[
-        # Resumen con ícono de casa
-        html.A([
-            html.I(className="fas fa-home", style={"marginRight": "10px"}),  # Ícono de casa
-            "Resumen"
-        ], href="/resumen", style={"padding": "8px 8px 8px 32px", "textDecoration": "none", "display": "block", "color": "inherit"}),
-
         # Contenedor para la lista de planes
         html.Div(id="plan-list", children=[]),
 
@@ -104,5 +98,15 @@ layout = html.Div([
     modal,
     navbar,
     sidebar,
-    html.Div(id="page-content")
+    html.Div([
+        # IDS no utilizados en esta página, previenen errores de id not found en callbacks
+        html.Div(id="events-container", style={"display": "none"}),
+        html.Div(id="position-set-button", style={"display": "none"}),
+        dcc.Input(id="input-day", style={"display": "none"}),
+        dcc.Input(id="input-month", style={"display": "none"}),
+        dcc.Input(id="input-year", style={"display": "none"}),
+        dcc.Input(id="input-hour", style={"display": "none"}),
+        dcc.Input(id="input-minute", style={"display": "none"}),
+        html.Div(id="progress-panel", style={"display": "none"}),
+    ], id="page-content")
 ])

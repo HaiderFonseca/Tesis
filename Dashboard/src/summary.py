@@ -15,16 +15,16 @@ def create_summary_page(nrc):
     url = f'{API_URL}?nameInput={nrc}'
     response = requests.get(url)
 
-    if response.status_code != 200:
+    if response.status_code != 200 or len(response.json()) == 0:
         return html.Div(
             style={"textAlign": "center", "fontSize": "24px", "fontWeight": "bold", "margin": "20px"},
             children="Error al cargar la página"
         )
     
     course_data = response.json()[0]
-    course_name = course_data['title']
+    course_name = course_data.get('title', 'Curso no encontrado')
 
-    course_code = course_data['class'] + course_data['course']
+    course_code = course_data.get('class', '') + course_data.get('course', '')
     url = f'{API_URL}?nameInput={course_code}'
     response = requests.get(url)
     simmilar_courses = response.json()
@@ -32,6 +32,11 @@ def create_summary_page(nrc):
     return html.Div(
         style={"backgroundColor": "#F7F7F7", "padding": "20px"},
         children=[
+
+            # IDS no utilizados en esta página, previenen errores de id not found en callbacks
+            html.Div(id="events-container", style={"display": "none"}),
+            html.Div(id="progress-panel", style={"display": "none"}),
+
             dcc.Interval(
                 id="interval-component",
                 interval=UPDATE_INTERVAL*1000,  # Intervalo en milisegundos (5 segundos)
@@ -50,7 +55,7 @@ def create_summary_page(nrc):
                     "fontWeight": "bold",
                     "marginBottom": "20px",
                 },
-                children=f"{course_name} (Sección {course_data['section']})"
+                children=f"{course_name} (Sección {course_data.get('section', 'desconocida')})"
             ),
 
             # Contenido Principal
@@ -217,17 +222,7 @@ def create_summary_page(nrc):
                     html.H4("Sugerencias", style={"marginBottom": "20px"}),
                     html.Div(
                         style={"display": "grid", "gap": "10px"},
-                        children=[
-                            html.Div(
-                                style={"display": "flex", "justifyContent": "space-between", "alignItems": "center", "padding": "10px", "borderRadius": "15px", "backgroundColor": "#f7f7f7"},
-                                children=[
-                                    html.Div(f"{course['class'] + course['course']}: Sección {course['section']} ({course['credits']} créditos)", style={"fontWeight": "bold"}),
-                                    html.Div(f"{max(int(course['maxenrol']) - int(course['enrolled']), 0)} Cupos", style={"marginLeft": "auto", "fontWeight": "bold"}),
-                                    html.Div(f"Inscritos: {course['enrolled']} - Total {course['maxenrol']}", style={"marginLeft": "10px", "marginRight": "10px"}),
-                                ],
-                            )
-                            for course in sorted(simmilar_courses, key=lambda x: int(x["maxenrol"]) - int(x["enrolled"]), reverse=True)
-                        ]
+                        id="suggestions-list"
                     )
                 ],
             ),
@@ -241,6 +236,7 @@ def create_summary_page(nrc):
     Output("dynamic-graph", "figure"),
     Output("available-seats", "children"),
     Output("probability-gauge", "figure"),
+    Output("suggestions-list", "children"),
     Input("interval-component", "n_intervals"),
     Input({'type': 'storage', 'index': 'position'}, 'data'),
     State("summary-nrc", "children"),
@@ -261,7 +257,7 @@ def update_graph(_, position, nrc):
     df["timestamp"] = df["timestamp"] - pd.Timedelta(hours=5)
     df = df.sort_values("timestamp")
 
-    maxenrol = int(course_data['maxenrol'])
+    maxenrol = int(course_data.get('maxenrol', 0))
 
     # Crear la figura
     figure = go.Figure(
@@ -286,35 +282,45 @@ def update_graph(_, position, nrc):
         annotation_font_color="rgba(0,0,0,0.5)"  # Color del texto
     )
 
-    slots = max(maxenrol - int(course_data['enrolled']), 0)
+    slots = max(maxenrol - int(course_data.get('enrolled', 0)), 0)
 
     # Calcular la probabilidad
     # Crear una instancia de Course para cada curso
     days_of_week = {"l": "Lunes", "m": "Martes", "i": "Miércoles", "j": "Jueves", "v": "Viernes", "s": "Sábado"}
     schedules = []
-    for schedule in course_data["schedules"]:
+    for schedule in course_data.get("schedules", []):
         days = []
         for day_key, day_name in days_of_week.items():
             if schedule.get(day_key):
                 days.append(day_name)
         schedules.append({
             "days": ",".join(days),
-            "time_ini": schedule["time_ini"],
-            "time_fin": schedule["time_fin"],
-            "classroom": schedule["classroom"]
+            "time_ini": schedule.get("time_ini", "0000"),
+            "time_fin": schedule.get("time_fin", "0000"),
+            "classroom": schedule.get("classroom", "Desconocido"),
         })
     
     course = Course(
-        nrc=course_data["nrc"],
+        nrc=course_data.get('nrc', ''),
         schedules=schedules,
-        course_level=int(course_data['course'][0]),
-        course_class=course_data['class'],
-        ptrmdesc=course_data['ptrmdesc'],
+        course_level=int(course_data.get('course', '0')[0]),
+        course_class=course_data.get('class', ''),
+        ptrmdesc=course_data.get('ptrmdesc', ''),
         first_enrollment_time=FIRST_ENROLLMENT_TIME
     )
     
+    # Fecha límite (un mes después del inicio de los cursos)
+    enrollment_deadline = FIRST_ENROLLMENT_TIME + pd.Timedelta(days=30)
     position = pd.Timestamp(position)
-    probability, expected_fill_time = predict_course_probability(course, position)
+
+    # Calcular la probabilidad de inscripción para el curso
+    if position  > enrollment_deadline:
+        # Si ha pasado más de un mes, la probabilidad es cero
+        probability = 0
+        expected_fill_time = None
+    else:
+        # Calcular la probabilidad normal si aún estamos dentro del plazo
+        probability, expected_fill_time = predict_course_probability(course, position)
 
     gauge = go.Figure(
         go.Indicator(
@@ -333,4 +339,21 @@ def update_graph(_, position, nrc):
         layout=go.Layout(height=200, margin={"t": 0, "b": 0, "l": 0, "r": 0}, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
     )
 
-    return figure, slots, gauge
+    course_code = course_data.get('class', '') + course_data.get('course', '')
+    url = f'{API_URL}?nameInput={course_code}'
+    response = requests.get(url)
+    simmilar_courses = response.json()
+
+    suggestions_list = [
+        html.Div(
+            style={"display": "flex", "justifyContent": "space-between", "alignItems": "center", "padding": "10px", "borderRadius": "15px", "backgroundColor": "#f7f7f7"},
+            children=[
+                html.Div(f"{course.get('class', '') + course.get('course', '')}: Sección {course.get('section', '')} ({course.get('credits', '')} créditos)", style={"fontWeight": "bold"}),
+                html.Div(f"{max(int(course.get('maxenrol', '')) - int(course.get('enrolled', '')), 0)} Cupos", style={"marginLeft": "auto", "fontWeight": "bold"}),
+                html.Div(f"Inscritos: {course.get('enrolled', '')} - Total {course.get('maxenrol', '')}", style={"marginLeft": "10px", "marginRight": "10px"}),
+            ],
+        )
+        for course in sorted(simmilar_courses, key=lambda x: int(x.get('maxenrol', '')) - int(x.get('enrolled', '')), reverse=True)
+    ]
+
+    return figure, slots, gauge, suggestions_list

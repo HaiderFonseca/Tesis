@@ -1,5 +1,4 @@
 from dash import html, dcc
-import dash_bootstrap_components as dbc
 
 def create_plan_page(plan_id):
 
@@ -136,4 +135,3 @@ def create_plan_page(plan_id):
                 ])
         ])
     ])
-

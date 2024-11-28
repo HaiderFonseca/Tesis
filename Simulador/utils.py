@@ -42,9 +42,9 @@ def apply_transactions(data, transactions, timestamp, current_time_column, nrc_c
     current_transactions = transactions[transactions[current_time_column] == timestamp]
     affected_nrcs = current_transactions[nrc_column]
     for course_section in data:
-        if int(course_section['nrc']) in affected_nrcs.values:
-            delta = current_transactions[current_transactions[nrc_column] == int(course_section['nrc'])][delta_enrolled_column].sum()
-            course_section['enrolled'] = str(int(course_section['enrolled']) + delta)
+        if int(course_section.get('nrc', '')) in affected_nrcs.values:
+            delta = current_transactions[current_transactions[nrc_column] == int(course_section.get('nrc', ''))][delta_enrolled_column].sum()
+            course_section['enrolled'] = str(int(course_section.get('enrolled', 0)) + delta)
     return affected_nrcs.shape[0]
 
 def normalize_text(text):
@@ -52,3 +52,9 @@ def normalize_text(text):
     if not text:
         return ""
     return unicodedata.normalize('NFKD', text).encode('ascii', 'ignore').decode('utf-8').lower()
+
+def find_str_within(search_query, text):
+    """Determina si un search_query está contenido en un texto."""
+    search_query = normalize_text(search_query)
+    text = normalize_text(text)
+    return all(word in text for word in search_query.split())
