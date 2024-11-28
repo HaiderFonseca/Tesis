@@ -349,7 +349,7 @@ def update_dashboard(schedules_data, position, url):
     position = pd.Timestamp(position)
 
     # Fecha límite (un mes después del inicio de los cursos)
-    enrollment_deadline = FIRST_ENROLLMENT_TIME + pd.Timedelta(days=50)
+    enrollment_deadline = FIRST_ENROLLMENT_TIME + pd.Timedelta(days=30)
 
     # Procesar cada curso en schedules
     for section in schedules_data:
