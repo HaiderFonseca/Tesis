@@ -1,56 +1,157 @@
-# Paso a Paso para ejecutar el simulador!
+# Wizard Seneca: Course Offering Analysis and Enrollment Prediction at Universidad de los Andes
 
-Previo:
-Descargar Thunder client y SQLite.
-Crear un ambiente virtual (Command+Shift+P)
-Verificar que model y scaler estén en la carpeta Dashboard , se genera corriendo el notebook de Modelo/Modelo.ipynb
+This repository allows for understanding and predicting the course enrollment dynamics at Universidad de los Andes. The project combines data analysis techniques, survival models, and interactive tools to study seat availability and anticipate when courses will fill up.
 
-Ahora sí:
+---
 
-\*Cada vez que se reinicia hay que reiniciar desde 0 borrar el archivo instance/enrollment.db #Este se crea automático al ejecutar el dashboard
+## Project Structure
 
-1. Activar el ambiente virtual ,si no está ya activado por visual (comando source .venv/bin/activate)
-2. Abrir 2 terminales y que ambas tengan el ambiente virtual activao #Izquierda el (.venv)
-3. En la primera terminal ejecutar el simulador (comando fastapi run ) #El simulador empieza con un dataset vacío , debe ser ejecutado en la carpeta simulador
-4. En la segunda terminal ejecutar el dashboard (comando python src/app.py), debe ser ejecutado en la carpeta Dashboard #Esperar a que se termine de cargar
-5. Enviar una petición en "simulador reset" de "Send" en thunder si esto no funciona se puede hacer este comando en una nueva terminal. # Body dentro de "tick_interval" se puede cambiar cada cuanto se actualiza el simulador y otras cosas.
+The repository is divided into five main components:
 
-curl -X POST "http://localhost:8000/restart" -H "accept: application/json" -H "Content-Type: application/json" -d "{\"dataset_name\":\"2024-20\",\"tick_interval\":10}"
+### 1. Course Offering Analysis
 
-7. Revisar en la base de datos enrollment.db que se estén guardando los datos
-8. En este punto el Dashboard debería mostrar el histórico de inscripciones en el endpoint (Mirar el ejemplo de Preca y analítica con thunder)
+* **Description:** Scripts and notebooks dedicated to exploring and analyzing the academic offerings by semester. Trends, demand, and seat availability in courses are studied.
+* **Content:** Visualizations, descriptive statistics, and temporal analysis of how courses fill up.
 
-http://127.0.0.1:8050/api/history/{NRC}
+### 2. Interactive Dashboard (Wizard Seneca)
 
-# API Courses Mock Server
+* **Description:** A web page that allows students to interact with the predictive model and simulate enrollment scenarios.
+* **Technology:** Built with Dash/Jupyter, it enables dynamic visualization and personalized queries.
+* **Model Used:** The primary model is **Random Survival Forest (RSF)**, which is based on decision trees for survival data. This model can handle the temporal and censored nature of enrollment data, capturing complex patterns of interactions between variables.
 
-Mock server implementation of the [Uniandes Course Offering API](https://ofertadecursos.uniandes.edu.co/api/courses). Used for testing purposes replicating the same API structure with historical data. Developed using FastAPI. Note that this is a _stateful_ server.
+### 3. Data
 
-## Setup
+* **Source:** Data is extracted from the public course offering system at Universidad de los Andes.
+* **Periods Included:** 2024-19, 2024-20, and 2024-21.
+* **Features:** Enrollments were recorded every five minutes, allowing for the construction of a very accurate time series on seat availability and enrollment trends.
 
+### 4. Predictive Model: Random Survival Forest (RSF)
+
+* **Description:** RSF was selected for its ability to model event times (course filling) and handle censored data.
+* **Variables Used:**
+
+  * **Time (30-minute intervals):** Identifies patterns based on the time of day.
+  * **Days of the Week:** One-hot encoding to differentiate enrollments by day.
+  * **Class (encoded):** The course category (e.g., “ADMI”).
+  * **Cycle (encoded):** The semester in which the course is offered, distinguishing between cycles and terms.
+  * **Course Level:** Indicates whether the course is basic, intermediate, or advanced.
+* **Implementation:** The model is trained on historical data and used to simulate and predict seat filling in real-time.
+
+### 5. Enrollment Simulator
+
+* **Description:** A tool that simulates the course filling process under controlled scenarios, generating synthetic data to validate and visualize the model's performance.
+* **Usefulness:** Allows experimentation with different configurations and validates the accuracy of the system in representative situations.
+
+---
+
+## How to Use the Project
+
+### Requirements
+
+* Python 3.x
+* Jupyter Notebook
+* Main Packages:
+
+  * pandas
+  * numpy
+  * scikit-learn
+  * matplotlib/seaborn
+  * dash (for the dashboard)
+  * lifelines (survival model implementation)
+  * random-survival-forest
+
+Install the necessary packages with:
+
+```bash
+pip install -r requirements.txt
 ```
+
+### Execution
+
+1. **Data Exploration:**
+   Open the main analysis notebook to explore the course offering and historical data.
+
+   ```bash
+   jupyter notebook Analisis_2024-20.ipynb
+   ```
+
+2. **RSF Model Training:**
+   Run the notebook/model to train the Random Survival Forest.
+
+   ```bash
+   jupyter notebook Modelo.ipynb
+   ```
+
+3. **Interactive Dashboard:**
+   To start the dashboard and query the predictive model in real-time:
+
+   ```bash
+   python src/app.py
+   ```
+
+4. **Enrollment Simulator:**
+   Run the simulator to generate synthetic scenarios and visualize course filling.
+
+---
+
+## Step-by-Step for Running the Simulator!
+
+**Before:**
+
+* Download Thunder Client and SQLite.
+* Create a virtual environment (Command+Shift+P).
+* Verify that the model and scaler are in the Dashboard folder, generated by running the notebook from Modelo/Modelo.ipynb.
+
+**Now:**
+
+* Each time the server is restarted, delete the file `instance/enrollment.db` (it is generated automatically when running the dashboard).
+
+1. Activate the virtual environment if not already activated (`source .venv/bin/activate`).
+2. Open two terminals with the virtual environment activated. In the left terminal, navigate to `.venv`.
+3. In the first terminal, run the simulator with the command `fastapi run`. The simulator starts with an empty dataset and should be executed in the `simulador` folder.
+4. In the second terminal, run the dashboard with the command `python src/app.py`. This should be executed in the `Dashboard` folder. Wait for it to load.
+5. Send a request to "simulador reset" by pressing "Send" in Thunder. If this does not work, you can issue this command in a new terminal.
+
+```bash
+curl -X POST "http://localhost:8000/restart" -H "accept: application/json" -H "Content-Type: application/json" -d "{\"dataset_name\":\"2024-20\",\"tick_interval\":10}"
+```
+
+7. Check the `enrollment.db` database to ensure the data is being saved.
+8. At this point, the Dashboard should display the historical enrollment data at the endpoint (check the Preca example and analytics with Thunder):
+
+   `http://127.0.0.1:8050/api/history/{NRC}`
+
+---
+
+## API Courses Mock Server
+
+This is a mock server implementation of the [Uniandes Course Offering API](https://ofertadecursos.uniandes.edu.co/api/courses). It is used for testing purposes, replicating the same API structure with historical data. Developed using FastAPI. Note that this is a *stateful* server.
+
+### Setup
+
+```bash
 python -m venv venv
 source .venv/bin/activate  # or .\.venv\Scripts\activate
 pip install -r requirements.txt
 fastapi run
 ```
 
-## Usage
+### Usage
 
 There are 2 modes of operation:
 
-- **On demand**: The server will tick each time a request is made, updating the data with the next available value in chronological order.
-- **Real time**: The server will tick every `tick_interval` seconds, updating the data with the next available value in chronological order.
+* **On demand**: The server will tick each time a request is made, updating the data with the next available value in chronological order.
+* **Real time**: The server will tick every `tick_interval` seconds, updating the data with the next available value in chronological order.
 
 > **What is a tick?** A tick means going one step forward in time, updating the data with the next available value in chronological order. For example, if the current time is 2021-01-01 14:30 and the next available value is 2021-01-02 14:35, a tick will update the data with the values for 2021-01-02 14:35.
 
-On startup, the server will start in _On demand_ mode with the default dataset. To switch to _Real time_ mode, use the `/restart` endpoint.
+On startup, the server will start in *On demand* mode with the default dataset. To switch to *Real time* mode, use the `/restart` endpoint.
 
 ### Endpoints
 
 #### Server Restart
 
-Restartes the server data to the initial state with new configuration. The server will start in _On demand_ mode if the `tick_interval` is set to 0, otherwise it will start in _Real time_ mode.
+Restarts the server data to the initial state with new configuration. The server will start in *On demand* mode if the `tick_interval` is set to 0, otherwise it will start in *Real time* mode.
 
 **Example request:**
 
@@ -112,11 +213,9 @@ curl -X GET "http://localhost:8000/api/courses" -H  "accept: application/json"
     "course": "1101",
     "section": "01",
     "credits": "3",
-    "title": "FUNDAMENTOS DE ADMINISTRACION Y GERENCIA (PARA ADMINISTRADORES)",
+    "title": "FUNDAMENTALS OF MANAGEMENT AND ADMINISTRATION",
     "enrolled": "84"
-    /* ... */
   }
-  /* ... */
 ]
 ```
 
@@ -133,4 +232,3 @@ http://localhost:8000/redoc
 ```
 http://localhost:8000/docs
 ```
-
