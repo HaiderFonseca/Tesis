@@ -134,6 +134,3 @@ http://localhost:8000/redoc
 http://localhost:8000/docs
 ```
 
----
-
-Happy coding! 🚀
